@@ -3,3 +3,6 @@ def connect():
 
 def find():
     print("Pretending to find documents...")
+
+def findd():
+    print("Pretending to find documents...")

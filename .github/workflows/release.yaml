@@ -11,11 +11,10 @@ on:
 env:
   PACKAGE_NAME: "knoozcicd"
   OWNER: "knoozfatima"
-  
 
 jobs:
   details:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       new_version: ${{ steps.release.outputs.new_version }}
       suffix: ${{ steps.release.outputs.suffix }}
@@ -33,9 +32,6 @@ jobs:
             echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
             echo "suffix=$SUFFIX" >> "$GITHUB_OUTPUT"
             echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
-            echo "Version is $NEW_VERSION"
-            echo "Suffix is $SUFFIX"
-            echo "Tag name is $TAG_NAME"
           else
             echo "No tag found"
             exit 1
@@ -43,7 +39,7 @@ jobs:
 
   check_pypi:
     needs: details
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Fetch information from PyPI
         run: |
@@ -69,7 +65,7 @@ jobs:
 
   setup_and_build:
     needs: [details, check_pypi]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
 
@@ -95,7 +91,7 @@ jobs:
           poetry build
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: dist
           path: dist/
@@ -103,25 +99,27 @@ jobs:
   pypi_publish:
     name: Upload release to PyPI
     needs: [setup_and_build, details]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     environment:
       name: release
     permissions:
       id-token: write
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v2
         with:
           name: dist
           path: dist/
 
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
 
   github_release:
     name: Create GitHub Release
     needs: [setup_and_build, details]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
     steps:
@@ -131,7 +129,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v2
         with:
           name: dist
           path: dist/
@@ -146,7 +144,7 @@ jobs:
   bump_homebrew_formula:
     name: Dispatch event to Repo B
     needs: [details, github_release, pypi_publish]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     environment:
       name: release
     steps:
